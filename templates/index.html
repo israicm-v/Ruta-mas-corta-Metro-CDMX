@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Menor Ruta: Metro CDMX</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            setTimeout(function() {
+                $('#splash-screen').fadeOut(1000, function() {
+                    $('#main-content').fadeIn(1000);
+                });
+            }, 10000); // Duración de la pantalla de presentación (3000 ms = 3 segundos)
+        });
+    </script>
+    <style>
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('/static/images/splash.jpg') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: black;
+            font-size: 2em;
+            z-index: 9999;
+            flex-direction: column;
+        }
+        #splash-screen h1 {
+            font-size: 3em;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+        }
+        #splash-screen p {
+            font-size: 1.5em;
+            font-family: 'Arial', sans-serif;
+        }
+        #main-content {
+            display: none;
+        }
+        .social-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .social-button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .fb-button {
+            background-color: #3b5998;
+        }
+        .twitter-button {
+            background-color: #1da1f2;
+        }
+        .info-button {
+            background-color: #007bff;
+        }
+        .github {
+            background-color: #333;
+        }
+        .social-button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="splash-screen">
+        <h1>Bienvenido</h1>
+        <p>a la Calculadora de Rutas del Metro CDMX</p>
+    </div>
+
+    <div id="main-content">
+        <div class="container">
+            <h1>Calcular Ruta en el Metro CDMX</h1>
+            <form id="ruta-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="linea-origen">Línea de Origen:</label>
+                        <select id="linea-origen" name="linea_origen">
+                            <option value="">Seleccione una línea</option>
+                            {% for linea in lineas %}
+                            <option value="{{ linea }}">{{ linea }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="origen">Estación de Origen:</label>
+                        <select id="origen" name="origen">
+                            <option value="">Seleccione una estación</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="linea-destino">Línea de Destino:</label>
+                        <select id="linea-destino" name="linea_destino">
+                            <option value="">Seleccione una línea</option>
+                            {% for linea in lineas %}
+                            <option value="{{ linea }}">{{ linea }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="destino">Estación Destino:</label>
+                        <select id="destino" name="destino">
+                            <option value="">Seleccione una estación</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button type="submit">Calcular la ruta</button>
+                </div>
+            </form>
+            <div id="resultado"></div>
+
+            <!-- Botones de redes sociales e información -->
+            <div class="social-buttons">
+                <a href="https://www.facebook.com/MetroCDMX/?locale=es_LA" target="_blank" class="social-button fb-button">Facebook</a>
+                <a href="https://x.com/MetroCDMX?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor" target="_blank" class="social-button twitter-button">Twitter</a>
+                <a href="https://www.metro.cdmx.gob.mx/" target="_blank" class="social-button info-button">Información</a>
+                <a href="https://github.com/israicm-v" target="_blank" class="social-button github">GitHub Developer</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#linea-origen').change(function() {
+                var linea = $(this).val();
+                $('#origen').html('<option value="">Cargando...</option>');
+                $.ajax({
+                    url: '/get_estaciones',
+                    type: 'POST',
+                    data: {'linea': linea},
+                    success: function(data) {
+                        var estaciones = $('#origen');
+                        estaciones.empty();
+                        estaciones.append('<option value="">Seleccione una estación</option>');
+                        $.each(data, function(index, value) {
+                            estaciones.append('<option value="' + value + '">' + value + '</option>');
+                        });
+                    }
+                });
+            });
+
+            $('#linea-destino').change(function() {
+                var linea = $(this).val();
+                $('#destino').html('<option value="">Cargando...</option>');
+                $.ajax({
+                    url: '/get_estaciones',
+                    type: 'POST',
+                    data: {'linea': linea},
+                    success: function(data) {
+                        var estaciones = $('#destino');
+                        estaciones.empty();
+                        estaciones.append('<option value="">Seleccione una estación</option>');
+                        $.each(data, function(index, value) {
+                            estaciones.append('<option value="' + value + '">' + value + '</option>');
+                        });
+                    }
+                });
+            });
+
+            $('#ruta-form').submit(function(event) {
+                event.preventDefault();
+                var origen = $('#origen').val();
+                var destino = $('#destino').val();
+                $('#resultado').html('Calculando ruta...');
+                $.ajax({
+                    url: '/calcular_ruta',
+                    type: 'POST',
+                    data: {'origen': origen, 'destino': destino},
+                    success: function(data) {
+                        $('#resultado').html(data);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
